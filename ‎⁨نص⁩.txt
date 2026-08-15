@@ -1,0 +1,1228 @@
+Package.json 
+
+FILE: package.json
+========================================
+{
+  "name": "ecommerce",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "4.2.2",
+    "@tanstack/react-router": "1.168.22",
+    "@tanstack/react-start": "1.167.41",
+    "@tanstack/router-plugin": "1.167.22",
+    "highlight.js": "11.11.1",
+    "lucide-react": "0.576.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwindcss": "4.2.2",
+    "vite-tsconfig-paths": "6.1.1",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@netlify/vite-plugin-tanstack-start": "1.3.17",
+    "@tailwindcss/vite": "4.2.2",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "5.2.0",
+    "lucide-react": "0.576.0",
+    "tailwindcss": "4.2.2",
+    "typescript": "5.9.3",
+    "rimraf": "6.1.3",
+    "vite": "7.3.6"
+  }
+}
+
+========================================
+FILE: src/types.ts
+========================================
+export type ProductCategory = 'rings' | 'necklaces' | 'earrings' | 'bracelets'
+
+export type ProductBadge = 'جديد' | 'الأكثر مبيعاً' | 'عرض خاص'
+
+export interface Product {
+  id: string
+  name: string
+  category: ProductCategory
+  price: number
+  oldPrice?: number
+  image: string
+  description: string
+  badge?: ProductBadge
+}
+
+export interface CartItem {
+  product: Product
+  quantity: number
+}
+
+export type ToastKind = 'cart' | 'wishlist' | 'wishlist-remove'
+
+export interface ToastMessage {
+  id: number
+  kind: ToastKind
+  text: string
+}
+
+========================================
+FILE: src/lib/whatsapp.ts
+========================================
+import type { CartItem } from '@/types'
+
+export const WHATSAPP_NUMBER = '9647866608293'
+
+export function formatIQD(amount: number): string {
+  return `${amount.toLocaleString('en-US')} د.ع`
+}
+
+export function buildContactMessage(text: string): string {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`
+}
+
+export function buildOrderMessage(items: Array<CartItem>): string {
+  const lines = [
+    'مرحباً هيرا (فضيات بغداد) 👋',
+    'أرغب بطلب المنتجات التالية:',
+    '',
+    ...items.map(
+      (item, index) =>
+        `${index + 1}. ${item.product.name} × ${item.quantity} — ${formatIQD(
+          item.product.price * item.quantity,
+        )}`,
+    ),
+    '',
+    `المجموع الكلي: ${formatIQD(
+      items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+    )}`,
+    '',
+    'الرجاء تأكيد الطلب وتزويدي بمعلومات التوصيل. شكراً لكم 🙏',
+  ]
+  return lines.join('\n')
+}
+
+export function buildWhatsAppOrderUrl(items: Array<CartItem>): string {
+  return buildContactMessage(buildOrderMessage(items))
+}
+
+========================================
+FILE: src/data/products.ts
+========================================
+import type { Product } from '@/types'
+
+const products: Array<Product> = [
+  {
+    id: 'r-001',
+    name: 'خاتم لؤلؤ الفضة',
+    category: 'rings',
+    price: 45000,
+    image:
+      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop',
+    description: 'خاتم فضة عيار 925 مرصع بحبة لؤلؤ طبيعية، تصميم أنيق يناسب الإطلالات اليومية والمناسبات.',
+    badge: 'جديد',
+  },
+  {
+    id: 'r-002',
+    name: 'خاتم تاج ملكي',
+    category: 'rings',
+    price: 38000,
+    image:
+      'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=800&auto=format&fit=crop',
+    description: 'خاتم فضة بتصميم تاج مطعّم بأحجار زركون لامعة، صناعة عراقية دقيقة.',
+  },
+  {
+    id: 'r-003',
+    name: 'خاتم الزهرة الفضي',
+    category: 'rings',
+    price: 32000,
+    oldPrice: 40000,
+    image:
+      'https://images.unsplash.com/photo-1611652022419-a9419f74343d?q=80&w=800&auto=format&fit=crop',
+    description: 'خاتم بتصميم زهرة أنيقة، مناسب للاستخدام اليومي وكهدية مميزة.',
+    badge: 'عرض خاص',
+  },
+  {
+    id: 'n-001',
+    name: 'عقد قلب بغداد',
+    category: 'necklaces',
+    price: 65000,
+    image:
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop',
+    description: 'عقد فضة بتصميم قلب أنيق مع سلسلة رفيعة، رمز للأناقة العراقية الأصيلة.',
+    badge: 'الأكثر مبيعاً',
+  },
+  {
+    id: 'n-002',
+    name: 'عقد الهلال الفضي',
+    category: 'necklaces',
+    price: 58000,
+    image:
+      'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800&auto=format&fit=crop',
+    description: 'قلادة على شكل هلال مصنوعة من الفضة الخالصة عيار 925، تصميم بسيط وفخم.',
+  },
+  {
+    id: 'n-003',
+    name: 'عقد الحجر الأزرق',
+    category: 'necklaces',
+    price: 72000,
+    image:
+      'https://images.unsplash.com/photo-1620656798579-1984d9e87df7?q=80&w=800&auto=format&fit=crop',
+    description: 'عقد فضي مرصع بحجر أزرق سماوي، إطلالة راقية لكل المناسبات.',
+    badge: 'جديد',
+  },
+  {
+    id: 'e-001',
+    name: 'أقراط اللؤلؤ الكلاسيكية',
+    category: 'earrings',
+    price: 28000,
+    image:
+      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=800&auto=format&fit=crop',
+    description: 'أقراط فضة كلاسيكية بحبات لؤلؤ صناعية عالية الجودة، خفيفة ومريحة.',
+    badge: 'الأكثر مبيعاً',
+  },
+  {
+    id: 'e-002',
+    name: 'أقراط النجمة اللامعة',
+    category: 'earrings',
+    price: 24000,
+    image:
+      'https://images.unsplash.com/photo-1629224316810-9d8805b95e76?q=80&w=800&auto=format&fit=crop',
+    description: 'أقراط بتصميم نجمة متلألئة مطعّمة بأحجار الزركون، مناسبة للسهرات.',
+  },
+  {
+    id: 'e-003',
+    name: 'أقراط الدائرة الفضية',
+    category: 'earrings',
+    price: 21000,
+    oldPrice: 27000,
+    image:
+      'https://images.unsplash.com/photo-1587467512961-120760940315?q=80&w=800&auto=format&fit=crop',
+    description: 'أقراط بتصميم دائري بسيط وعصري، مثالية للاستخدام اليومي.',
+    badge: 'عرض خاص',
+  },
+  {
+    id: 'b-001',
+    name: 'أسورة السلسلة الملكية',
+    category: 'bracelets',
+    price: 52000,
+    image:
+      'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800&auto=format&fit=crop',
+    description: 'أسورة فضة بتصميم سلسلة متينة وأنيقة، عيار 925 أصلي.',
+  },
+  {
+    id: 'b-002',
+    name: 'أسورة القلب المزدوج',
+    category: 'bracelets',
+    price: 47000,
+    image:
+      'https://images.unsplash.com/photo-1620656798579-1984d9e87df7?q=80&w=800&auto=format&fit=crop',
+    description: 'أسورة رقيقة بتصميم قلبين متشابكين، رمز للحب والعطاء.',
+    badge: 'جديد',
+  },
+  {
+    id: 'b-003',
+    name: 'أسورة التنيس الفضية',
+    category: 'bracelets',
+    price: 68000,
+    image:
+      'https://images.unsplash.com/photo-1602752275438-53a1a76b91d2?q=80&w=800&auto=format&fit=crop',
+    description: 'أسورة فضية مرصعة بأحجار زركون على طول السوار، فخامة تدوم.',
+    badge: 'الأكثر مبيعاً',
+  },
+]
+
+export default products
+
+========================================
+FILE: src/router.tsx
+========================================
+import { createRouter } from '@tanstack/react-router'
+
+// Import the generated route tree
+import { routeTree } from './routeTree.gen'
+
+// Create a new router instance
+export const getRouter = () => {
+  const router = createRouter({
+    routeTree,
+    scrollRestoration: true,
+    defaultPreloadStaleTime: 0,
+  })
+
+  return router
+}
+
+========================================
+FILE: src/routes/__root.tsx
+========================================
+import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+
+
+import '../styles.css'
+
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      {
+        charSet: 'utf-8',
+      },
+      {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1',
+      },
+      {
+        title: 'HIRA | فضيات بغداد - مجوهرات فضية فاخرة',
+      },
+      {
+        name: 'description',
+        content:
+          'هيرا (فضيات بغداد) - متجر مجوهرات فضية فاخرة عيار 925، خواتم وعقود وأساور وأقراط بتصاميم عراقية أصيلة، توصيل لجميع المحافظات.',
+      },
+    ],
+    links: [
+      {
+        rel: 'preconnect',
+        href: 'https://fonts.googleapis.com',
+      },
+      {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+        crossOrigin: 'anonymous',
+      },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Reem+Kufi:wght@400;500;600;700&display=swap',
+      },
+    ],
+  }),
+  shellComponent: RootDocument,
+})
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+
+========================================
+FILE: src/routes/index.tsx
+========================================
+import { createFileRoute } from '@tanstack/react-router'
+import { useCallback, useMemo, useState } from 'react'
+import productsData from '@/data/products'
+import type { CartItem, Product, ToastKind, ToastMessage } from '@/types'
+import { Header } from '@/components/Header'
+import { Hero } from '@/components/Hero'
+import { TrustStrip } from '@/components/TrustStrip'
+import { ProductGrid } from '@/components/ProductGrid'
+import { CartDrawer } from '@/components/CartDrawer'
+import { About } from '@/components/About'
+import { Contact } from '@/components/Contact'
+import { Footer } from '@/components/Footer'
+import { ToastStack } from '@/components/Toast'
+
+export const Route = createFileRoute('/')({
+  component: HiraStore,
+})
+
+let toastCounter = 0
+
+function HiraStore() {
+  const [cart, setCart] = useState<Array<CartItem>>([])
+  const [wishlist, setWishlist] = useState<Set<string>>(new Set())
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [toasts, setToasts] = useState<Array<ToastMessage>>([])
+
+  const pushToast = useCallback((kind: ToastKind, text: string) => {
+    toastCounter += 1
+    const id = toastCounter
+    setToasts((prev) => [...prev, { id, kind, text }])
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    }, 3000)
+  }, [])
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id))
+  }, [])
+
+  const handleAddToCart = useCallback(
+    (product: Product) => {
+      setCart((prev) => {
+        const existing = prev.find((item) => item.product.id === product.id)
+        if (existing) {
+          return prev.map((item) =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item,
+          )
+        }
+        return [...prev, { product, quantity: 1 }]
+      })
+      pushToast('cart', `تمت إضافة "${product.name}" إلى السلة`)
+    },
+    [pushToast],
+  )
+
+  const handleToggleWishlist = useCallback(
+    (product: Product) => {
+      setWishlist((prev) => {
+        const next = new Set(prev)
+        if (next.has(product.id)) {
+          next.delete(product.id)
+          pushToast('wishlist-remove', `تمت إزالة "${product.name}" من المفضلة`)
+        } else {
+          next.add(product.id)
+          pushToast('wishlist', `تمت إضافة "${product.name}" إلى المفضلة`)
+        }
+        return next
+      })
+    },
+    [pushToast],
+  )
+
+  const handleIncrement = useCallback((productId: string) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.product.id === productId ? { ...item, quantity: item.quantity + 1 } : item,
+      ),
+    )
+  }, [])
+
+  const handleDecrement = useCallback((productId: string) => {
+    setCart((prev) =>
+      prev
+        .map((item) =>
+          item.product.id === productId ? { ...item, quantity: item.quantity - 1 } : item,
+        )
+        .filter((item) => item.quantity > 0),
+    )
+  }, [])
+
+  const handleRemove = useCallback((productId: string) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productId))
+  }, [])
+
+  const cartCount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart],
+  )
+
+  return (
+    <div className="min-h-screen bg-white font-cairo text-slate-900" dir="rtl">
+      <Header cartCount={cartCount} onOpenCart={() => setIsCartOpen(true)} />
+      <Hero />
+      <TrustStrip />
+      <ProductGrid
+        products={productsData}
+        wishlist={wishlist}
+        onToggleWishlist={handleToggleWishlist}
+        onAddToCart={handleAddToCart}
+      />
+      <About />
+      <Contact />
+      <Footer />
+
+      <CartDrawer
+        isOpen={isCartOpen}
+        items={cart}
+        onClose={() => setIsCartOpen(false)}
+        onIncrement={handleIncrement}
+        onDecrement={handleDecrement}
+        onRemove={handleRemove}
+      />
+
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  )
+}
+
+========================================
+FILE: src/components/Header.tsx
+========================================
+import { Gem, Menu, MessageCircle, ShoppingBag, X } from 'lucide-react'
+import { useState } from 'react'
+
+const NAV_LINKS = [
+  { label: 'الرئيسية', href: '#home' },
+  { label: 'المنتجات', href: '#products' },
+  { label: 'من نحن', href: '#about' },
+  { label: 'تواصل معنا', href: '#contact' },
+]
+
+export function Header({
+  cartCount,
+  onOpenCart,
+}: {
+  cartCount: number
+  onOpenCart: () => void
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <a href="#home" className="flex items-center gap-2">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white">
+            <Gem className="h-5 w-5" />
+          </span>
+          <span className="flex flex-col leading-tight">
+            <span className="font-reem text-xl font-bold tracking-wide text-slate-900">
+              HIRA
+            </span>
+            <span className="text-[11px] text-slate-500">فضيات بغداد</span>
+          </span>
+        </a>
+
+        <nav className="hidden items-center gap-8 md:flex">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="text-sm font-medium text-slate-600 transition hover:text-sky-700"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="https://wa.me/9647866608293"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-700 sm:flex"
+          >
+            <MessageCircle className="h-4 w-4" />
+            واتساب
+          </a>
+
+          <button
+            onClick={onOpenCart}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white transition hover:bg-slate-800"
+            aria-label="سلة المشتريات"
+          >
+            <ShoppingBag className="h-5 w-5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1.5 -left-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-500 px-1 text-[11px] font-bold text-white ring-2 ring-white">
+                {cartCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 md:hidden"
+            aria-label="القائمة"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      {menuOpen && (
+        <nav className="flex flex-col gap-1 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      )}
+    </header>
+  )
+}
+
+========================================
+FILE: src/components/Hero.tsx
+========================================
+import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react'
+
+export function Hero() {
+  return (
+    <section
+      id="home"
+      className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-sky-500/20 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-32 -right-16 h-80 w-80 rounded-full bg-slate-400/10 blur-3xl animate-pulse-slow"
+      />
+
+      <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-8 px-4 py-20 text-center sm:px-6 lg:px-8 lg:py-28">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-sky-200">
+          <ShieldCheck className="h-4 w-4" />
+          فضة عيار 925 أصلية مضمونة
+        </div>
+
+        <h1 className="max-w-3xl font-reem text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
+          هيرا للمجوهرات الفضية
+          <span className="mt-2 block bg-gradient-to-l from-sky-300 to-slate-100 bg-clip-text text-transparent">
+            أناقة بغدادية أصيلة
+          </span>
+        </h1>
+
+        <p className="max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg">
+          تشكيلة فاخرة من الخواتم والعقود والأساور المصنوعة يدوياً من الفضة الخالصة،
+          توصيل سريع إلى جميع محافظات العراق.
+        </p>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <a
+            href="#products"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition hover:bg-sky-400"
+          >
+            تسوقي الآن
+            <ArrowLeft className="h-4 w-4" />
+          </a>
+          <a
+            href="https://wa.me/9647866608293"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/10"
+          >
+            <Sparkles className="h-4 w-4" />
+            تواصلي معنا واتساب
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+========================================
+FILE: src/components/TrustStrip.tsx
+========================================
+import { Gem, RefreshCw, ShieldCheck, Truck } from 'lucide-react'
+
+const FEATURES = [
+  {
+    icon: Truck,
+    title: 'توصيل لكل المحافظات',
+    text: 'شحن سريع وآمن إلى جميع أنحاء العراق',
+  },
+  {
+    icon: Gem,
+    title: 'فضة عيار 925 نقية',
+    text: 'ضمان أصالة كل قطعة من مجوهراتنا',
+  },
+  {
+    icon: RefreshCw,
+    title: 'استبدال خلال 7 أيام',
+    text: 'سياسة استبدال مرنة تضمن رضاكِ التام',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'دفع عند الاستلام',
+    text: 'اطمئني وادفعي بعد فحص القطعة',
+  },
+]
+
+export function TrustStrip() {
+  return (
+    <section className="border-b border-slate-200 bg-white">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 lg:grid-cols-4 lg:px-8">
+        {FEATURES.map((feature) => (
+          <div key={feature.title} className="flex flex-col items-center gap-2 text-center">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sky-50 text-sky-700">
+              <feature.icon className="h-5 w-5" />
+            </span>
+            <h3 className="text-sm font-bold text-slate-800">{feature.title}</h3>
+            <p className="text-xs leading-relaxed text-slate-500">{feature.text}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+========================================
+FILE: src/components/ProductGrid.tsx
+========================================
+import { useMemo, useState } from 'react'
+import type { Product, ProductCategory } from '@/types'
+import { ProductCard } from '@/components/ProductCard'
+
+const CATEGORIES: Array<{ key: ProductCategory | 'all'; label: string }> = [
+  { key: 'all', label: 'الكل' },
+  { key: 'rings', label: 'خواتم' },
+  { key: 'necklaces', label: 'عقود' },
+  { key: 'earrings', label: 'أقراط' },
+  { key: 'bracelets', label: 'أساور' },
+]
+
+export function ProductGrid({
+  products,
+  wishlist,
+  onToggleWishlist,
+  onAddToCart,
+}: {
+  products: Array<Product>
+  wishlist: Set<string>
+  onToggleWishlist: (product: Product) => void
+  onAddToCart: (product: Product) => void
+}) {
+  const [activeCategory, setActiveCategory] = useState<ProductCategory | 'all'>('all')
+
+  const filtered = useMemo(() => {
+    if (activeCategory === 'all') return products
+    return products.filter((product) => product.category === activeCategory)
+  }, [products, activeCategory])
+
+  return (
+    <section id="products" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mb-10 text-center">
+        <h2 className="font-reem text-3xl font-bold text-slate-900">تشكيلتنا المميزة</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          اختاري القطعة التي تناسب أناقتك من مجموعتنا الفضية
+        </p>
+      </div>
+
+      <div className="mb-10 flex flex-wrap items-center justify-center gap-2">
+        {CATEGORIES.map((category) => (
+          <button
+            key={category.key}
+            onClick={() => setActiveCategory(category.key)}
+            className={`rounded-full border px-5 py-2 text-sm font-medium transition ${
+              activeCategory === category.key
+                ? 'border-slate-900 bg-slate-900 text-white'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-sky-300 hover:text-sky-700'
+            }`}
+          >
+            {category.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+        {filtered.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            isWishlisted={wishlist.has(product.id)}
+            onToggleWishlist={onToggleWishlist}
+            onAddToCart={onAddToCart}
+          />
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="py-16 text-center text-sm text-slate-500">لا توجد منتجات في هذا التصنيف حالياً.</p>
+      )}
+    </section>
+  )
+}
+
+========================================
+FILE: src/components/ProductCard.tsx
+========================================
+import { Heart, ShoppingBag } from 'lucide-react'
+import type { Product } from '@/types'
+import { formatIQD } from '@/lib/whatsapp'
+
+const BADGE_STYLES: Record<string, string> = {
+  جديد: 'bg-sky-600 text-white',
+  'الأكثر مبيعاً': 'bg-slate-900 text-white',
+  'عرض خاص': 'bg-rose-500 text-white',
+}
+
+export function ProductCard({
+  product,
+  isWishlisted,
+  onToggleWishlist,
+  onAddToCart,
+}: {
+  product: Product
+  isWishlisted: boolean
+  onToggleWishlist: (product: Product) => void
+  onAddToCart: (product: Product) => void
+}) {
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10">
+      <div className="relative aspect-square overflow-hidden bg-slate-100">
+        <img
+          src={product.image}
+          alt={product.name}
+          loading="lazy"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+        />
+
+        {product.badge && (
+          <span
+            className={`absolute right-3 top-3 rounded-full px-3 py-1 text-[11px] font-bold ${BADGE_STYLES[product.badge]}`}
+          >
+            {product.badge}
+          </span>
+        )}
+
+        <button
+          onClick={() => onToggleWishlist(product)}
+          aria-label="إضافة إلى المفضلة"
+          className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow transition hover:text-rose-500"
+        >
+          <Heart
+            className={`h-4 w-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`}
+          />
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <h3 className="text-sm font-bold text-slate-800">{product.name}</h3>
+        <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">
+          {product.description}
+        </p>
+
+        <div className="mt-auto flex items-end justify-between pt-2">
+          <div className="flex flex-col">
+            <span className="font-reem text-base font-bold text-slate-900">
+              {formatIQD(product.price)}
+            </span>
+            {product.oldPrice && (
+              <span className="text-xs text-slate-400 line-through">
+                {formatIQD(product.oldPrice)}
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={() => onAddToCart(product)}
+            className="flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-sky-600"
+          >
+            <ShoppingBag className="h-3.5 w-3.5" />
+            أضف للسلة
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+========================================
+FILE: src/components/CartDrawer.tsx
+========================================
+import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
+import type { CartItem } from '@/types'
+import { buildWhatsAppOrderUrl, formatIQD } from '@/lib/whatsapp'
+
+export function CartDrawer({
+  isOpen,
+  items,
+  onClose,
+  onIncrement,
+  onDecrement,
+  onRemove,
+}: {
+  isOpen: boolean
+  items: Array<CartItem>
+  onClose: () => void
+  onIncrement: (productId: string) => void
+  onDecrement: (productId: string) => void
+  onRemove: (productId: string) => void
+}) {
+  const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+
+  const handleCheckout = () => {
+    if (items.length === 0) return
+    window.open(buildWhatsAppOrderUrl(items), '_blank', 'noopener,noreferrer')
+  }
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm transition-opacity ${
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        aria-hidden
+      />
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-full max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        role="dialog"
+        aria-label="سلة المشتريات"
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h2 className="flex items-center gap-2 font-reem text-lg font-bold text-slate-900">
+            <ShoppingBag className="h-5 w-5" />
+            سلة المشتريات
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="إغلاق السلة"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {items.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-slate-400">
+              <ShoppingBag className="h-10 w-10" />
+              <p className="text-sm">سلتك فارغة حالياً</p>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-4">
+              {items.map((item) => (
+                <li key={item.product.id} className="flex gap-3 border-b border-slate-100 pb-4">
+                  <img
+                    src={item.product.image}
+                    alt={item.product.name}
+                    className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                  />
+                  <div className="flex flex-1 flex-col justify-between">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-bold text-slate-800">{item.product.name}</h3>
+                      <button
+                        onClick={() => onRemove(item.product.id)}
+                        aria-label="حذف من السلة"
+                        className="text-slate-400 transition hover:text-rose-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <span className="text-sm font-semibold text-sky-700">
+                      {formatIQD(item.product.price)}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => onDecrement(item.product.id)}
+                        aria-label="إنقاص الكمية"
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-4 text-center text-sm font-bold text-slate-800">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => onIncrement(item.product.id)}
+                        aria-label="زيادة الكمية"
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="border-t border-slate-200 px-5 py-4">
+          <div className="mb-4 flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">المجموع الكلي</span>
+            <span className="font-reem text-xl font-bold text-slate-900">{formatIQD(total)}</span>
+          </div>
+          <button
+            onClick={handleCheckout}
+            disabled={items.length === 0}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-sky-600 py-3.5 text-sm font-bold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            إتمام الطلب عبر واتساب
+          </button>
+        </div>
+      </aside>
+    </>
+  )
+}
+
+========================================
+FILE: src/components/About.tsx
+========================================
+import { Award, Gem, Handshake, ShieldCheck } from 'lucide-react'
+
+const GUARANTEES = [
+  { icon: Gem, title: 'فضة 925 أصلية', text: 'كل قطعة مختومة ومضمونة الأصالة' },
+  { icon: ShieldCheck, title: 'جودة موثوقة', text: 'فحص دقيق لكل قطعة قبل التسليم' },
+  { icon: Handshake, title: 'خدمة عملاء', text: 'دعم فوري عبر واتساب على مدار الأسبوع' },
+  { icon: Award, title: 'سنوات من الخبرة', text: 'حرفية عراقية أصيلة في صياغة الفضة' },
+]
+
+export function About() {
+  return (
+    <section id="about" className="bg-slate-50 py-16">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
+        <div>
+          <h2 className="font-reem text-3xl font-bold text-slate-900">من نحن</h2>
+          <p className="mt-4 leading-relaxed text-slate-600">
+            هيرا (فضيات بغداد) علامة عراقية متخصصة في تصميم وصياغة المجوهرات الفضية
+            الفاخرة. نؤمن بأن الفضة الأصيلة تستحق أن تكون في متناول كل امرأة عراقية،
+            لذلك نحرص على تقديم قطع مصنوعة من فضة عيار 925 بتصاميم تجمع بين الأصالة
+            والحداثة، مع خدمة توصيل موثوقة لجميع المحافظات.
+          </p>
+          <div className="mt-8 grid grid-cols-2 gap-6">
+            {GUARANTEES.map((item) => (
+              <div key={item.title} className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm">
+                  <item.icon className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">{item.title}</h3>
+                  <p className="text-xs leading-relaxed text-slate-500">{item.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative overflow-hidden rounded-3xl">
+          <img
+            src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=1000&auto=format&fit=crop"
+            alt="مجوهرات فضية هيرا"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-x-6 bottom-6 rounded-2xl bg-white/90 px-5 py-4 backdrop-blur">
+            <p className="text-sm font-bold text-slate-900">ضمان 925 على جميع المنتجات</p>
+            <p className="text-xs text-slate-500">استبدال مجاني خلال 7 أيام من الاستلام</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+========================================
+FILE: src/components/Contact.tsx
+========================================
+import { Instagram, Mail, MapPin, MessageCircle } from 'lucide-react'
+import { buildContactMessage } from '@/lib/whatsapp'
+
+export function Contact() {
+  const contactUrl = buildContactMessage('مرحباً هيرا (فضيات بغداد)، لدي استفسار حول منتجاتكم.')
+
+  return (
+    <section id="contact" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="rounded-3xl bg-slate-900 px-6 py-14 text-center sm:px-12">
+        <h2 className="font-reem text-3xl font-bold text-white">تواصلي معنا</h2>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300">
+          لديك استفسار عن منتج أو طلب خاص؟ فريقنا جاهز لمساعدتك عبر واتساب أو انستغرام.
+        </p>
+
+        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <a
+            href={contactUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 rounded-full bg-sky-500 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-sky-400"
+          >
+            <MessageCircle className="h-4 w-4" />
+            واتساب: 9647866608293+
+          </a>
+          <a
+            href="https://instagram.com/hira.baghdad"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/10"
+          >
+            <Instagram className="h-4 w-4" />
+            hira.baghdad@
+          </a>
+        </div>
+
+        <div className="mt-8 flex flex-col items-center justify-center gap-4 text-xs text-slate-400 sm:flex-row sm:gap-8">
+          <span className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            بغداد، العراق — توصيل لجميع المحافظات
+          </span>
+          <span className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            info@hira-baghdad.iq
+          </span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+========================================
+FILE: src/components/Footer.tsx
+========================================
+import { Gem, Instagram, MessageCircle } from 'lucide-react'
+
+export function Footer() {
+  return (
+    <footer className="border-t border-slate-200 bg-white">
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-6 px-4 py-10 text-center sm:px-6 lg:flex-row lg:justify-between lg:text-right lg:px-8">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white">
+            <Gem className="h-4 w-4" />
+          </span>
+          <div className="flex flex-col leading-tight">
+            <span className="font-reem text-lg font-bold text-slate-900">HIRA</span>
+            <span className="text-[11px] text-slate-500">فضيات بغداد</span>
+          </div>
+        </div>
+
+        <p className="max-w-sm text-xs leading-relaxed text-slate-500">
+          مجوهرات فضية عيار 925 أصلية، صياغة عراقية فاخرة، توصيل لجميع المحافظات.
+        </p>
+
+        <div className="flex items-center gap-3">
+          <a
+            href="https://wa.me/9647866608293"
+            target="_blank"
+            rel="noreferrer"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-sky-300 hover:text-sky-700"
+            aria-label="واتساب"
+          >
+            <MessageCircle className="h-4 w-4" />
+          </a>
+          <a
+            href="https://instagram.com/hira.baghdad"
+            target="_blank"
+            rel="noreferrer"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-sky-300 hover:text-sky-700"
+            aria-label="انستغرام"
+          >
+            <Instagram className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
+      <div className="border-t border-slate-100 py-4 text-center text-[11px] text-slate-400">
+        © {new Date().getFullYear()} HIRA — فضيات بغداد. جميع الحقوق محفوظة.
+      </div>
+    </footer>
+  )
+}
+
+========================================
+FILE: src/components/Toast.tsx
+========================================
+import { Check, Heart, ShoppingBag, X } from 'lucide-react'
+import type { ToastMessage } from '@/types'
+
+const ICONS = {
+  cart: ShoppingBag,
+  wishlist: Heart,
+  'wishlist-remove': X,
+} as const
+
+export function ToastStack({
+  toasts,
+  onDismiss,
+}: {
+  toasts: Array<ToastMessage>
+  onDismiss: (id: number) => void
+}) {
+  return (
+    <div className="fixed bottom-4 left-1/2 z-[100] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0">
+      {toasts.map((toast) => {
+        const Icon = ICONS[toast.kind]
+        return (
+          <div
+            key={toast.id}
+            role="status"
+            className="animate-toast-in flex items-center gap-3 rounded-xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg shadow-slate-900/10 backdrop-blur"
+          >
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                toast.kind === 'wishlist-remove'
+                  ? 'bg-slate-100 text-slate-500'
+                  : 'bg-sky-100 text-sky-700'
+              }`}
+            >
+              {toast.kind === 'cart' ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+            </span>
+            <p className="flex-1 text-sm font-medium text-slate-700">{toast.text}</p>
+            <button
+              onClick={() => onDismiss(toast.id)}
+              className="text-slate-400 transition hover:text-slate-600"
+              aria-label="إغلاق"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+========================================
+FILE: src/styles.css
+========================================
+@import "tailwindcss" source("../");
+
+@theme {
+  --font-cairo: "Cairo", system-ui, sans-serif;
+  --font-reem: "Reem Kufi", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: "Cairo", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-cairo {
+  font-family: "Cairo", system-ui, sans-serif;
+}
+
+.font-reem {
+  font-family: "Reem Kufi", system-ui, sans-serif;
+}
+
+code {
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.25s ease-out;
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
