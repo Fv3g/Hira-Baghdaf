@@ -1,0 +1,27 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "public/images/uploads"
+public_folder: "/images/uploads"
+
+collections:
+  - name: "products"
+    label: "المنتجات"
+    files:
+      - file: "src/data/products.ts"
+        label: "قائمة المنتجات"
+        name: "products_list"
+        fields:
+          - name: "products"
+            label: "المنتجات"
+            widget: "list"
+            fields:
+              - { label: "المعرّف (ID)", name: "id", widget: "string" }
+              - { label: "اسم المنتج", name: "name", widget: "string" }
+              - { label: "القسم", name: "category", widget: "select", options: ["rings", "necklaces", "earrings", "bracelets"] }
+              - { label: "السعر (د.ع)", name: "price", widget: "number", value_type: "int" }
+              - { label: "السعر القديم", name: "oldPrice", widget: "number", value_type: "int", required: false }
+              - { label: "رابط الصورة", name: "image", widget: "image" }
+              - { label: "الوصف", name: "description", widget: "text" }
+              - { label: "الشارة (Badge)", name: "badge", widget: "select", options: ["جديد", "الأكثر مبيعاً", "عرض خاص"], required: false }
