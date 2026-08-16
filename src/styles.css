@@ -1,0 +1,62 @@
+@import "tailwindcss" source("../");
+
+@theme {
+  --font-cairo: "Cairo", system-ui, sans-serif;
+  --font-reem: "Reem Kufi", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: "Cairo", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-cairo {
+  font-family: "Cairo", system-ui, sans-serif;
+}
+
+.font-reem {
+  font-family: "Reem Kufi", system-ui, sans-serif;
+}
+
+code {
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.25s ease-out;
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
