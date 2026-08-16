@@ -18,7 +18,7 @@ export const Route = createFileRoute('/')({
 
 let toastCounter = 0
 
-function HiraStore() {
+export default function HiraStore() {
   const [cart, setCart] = useState<Array<CartItem>>([])
   const [wishlist, setWishlist] = useState<Set<string>>(new Set())
   const [isCartOpen, setIsCartOpen] = useState(false)
