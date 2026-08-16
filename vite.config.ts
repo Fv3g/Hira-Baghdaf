@@ -6,20 +6,13 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 export default defineConfig({
   plugins: [
     tanstackStart({
-      prerender: {
-        enabled: true,
-        crawlLinks: true,
-      },
-      spa: {
-        enabled: false,
-      },
+      prerender: { enabled: true, crawlLinks: true },
+      spa: { enabled: false },
     }),
     react(),
     tsconfigPaths(),
   ],
   resolve: {
-    alias: {
-      '@': '/src',
-    },
+    alias: { '@': '/src' },
   },
 })
