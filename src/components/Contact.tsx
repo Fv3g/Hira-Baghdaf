@@ -1,5 +1,5 @@
 import { Instagram, Mail, MapPin, MessageCircle } from 'lucide-react'
-import { buildContactMessage } from '../lib/whatsapp'
+import { buildContactMessage } from '@/lib/whatsapp'
 
 export function Contact() {
   const contactUrl = buildContactMessage(
