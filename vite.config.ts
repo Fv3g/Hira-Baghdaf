@@ -7,4 +7,9 @@ export default defineConfig({
     react(),
     tsconfigPaths(),
   ],
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
 })
