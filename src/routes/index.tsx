@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useMemo, useState } from 'react'
-import productsData from '@/data/products'
+import productsData from '../data/products'
 import type { CartItem, Product, ToastKind, ToastMessage } from '@/types'
 import { Header } from '@/components/Header'
 import { Hero } from '@/components/Hero'
